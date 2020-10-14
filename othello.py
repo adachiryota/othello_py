@@ -73,20 +73,25 @@ class Othello:
     def __init__(self):
         self.board = ""
         self.main = main = Tkview(self.board)
+        main.initWindow()
         
 
 
 class Tkview:
     def __init__(self,board):
+        print("view")
         #画面定義
+        
+
+    def initWindow(self): 
         self.window = window = tkinter.Tk()
         window.title("4colors")
         window.geometry("800x600")
         window.grid_rowconfigure(0, weight=1)
         window.grid_columnconfigure(0, weight=1)
+        window.resizable(width=False, height=False)
 
-        
-
+        self.data = ["先攻","後攻","強い","普通","弱い"]
         #スタート画面
         start_page = tkinter.Frame(window)
         font_title = font.Font(family="Times",size=100,weight="bold")
@@ -155,6 +160,9 @@ class Tkview:
         attack_var.set(0)
         #強い普通弱いをpとnとwとする
         level_var.set(2)
+
+        self.attack = 0
+        self.level = 2
         
 
         attack_first_buttton = tkinter.Radiobutton(battle_cpu_page,value=0,variable=attack_var,text="先攻")
@@ -173,7 +181,7 @@ class Tkview:
         back_mode_button = tkinter.Button(battle_cpu_page,text=u"-戻る-",font=font_button,command=lambda: self.movePage(mode_page))
         back_mode_button.place(relx=0.4,rely=0.8,anchor=tkinter.CENTER)
 
-        battle_button = tkinter.Button(battle_cpu_page,text=u"-ゲームスタート-",font=font_button,command=lambda:[self.movePage(othello_cpu_page),self.getData(othello_cpu_page,attack_var.get(),level_var.get())])
+        battle_button = tkinter.Button(battle_cpu_page,text=u"-ゲームスタート-",font=font_button,command=lambda: self.movePage(othello_cpu_page))
         battle_button.place(relx=0.6,rely=0.8,anchor=tkinter.CENTER)     
         battle_cpu_page.grid(row=0, column=0, sticky="nsew")
 
@@ -182,17 +190,58 @@ class Tkview:
         othello_cpu_page = tkinter.Frame(window)
 
         
-        font_text = font.Font(family="Times",size=50,weight="bold")
-        othello_cpu_title = tkinter.Label(othello_cpu_page,text =u"test",font=font_text)        
-        othello_cpu_title.place(relx = 0.5,rely=0.2,anchor=tkinter.CENTER)
+        font_text = font.Font(family="Times",size=20,weight="bold")
+        othello_cpu_title = tkinter.Label(othello_cpu_page,text = "あなた:" + self.data[attack_var.get()] + "  CPU:" + self.data[level_var.get()],font=font_text)        
+        othello_cpu_title.place(relx = 0.7,rely=0.12,anchor=tkinter.CENTER)
+
+        cells_tag = []
+
+        # tagがキー、座標がバリューの辞書定義
+        tag_to_coord = {}
+
+        # 座標がキー、tagがバリューの辞書定義
+        self.coord_to_tag = {}
+
+        # クリックされたtag保存変数
+        self.clicked_tag = "null"
+
+        # 座標がキー、駒の状態を示す値をバリューとする辞書定義
+        # (駒なし:0, 黒:1, 白:2)
+        coord_to_piece = {}
         
 
 
         cells = tkinter.Canvas(othello_cpu_page,width=400,height=400)
         for i in range(8):
             for j in range(8):
-                cells.create_rectangle(i*50,j*50,50+i*50,50+j*50,fill = "green",outline="black")
-        cells.place(x=350,y=50)
+                tags = "{}_{}".format(i, j)
+                coord = (i*50,j*50,50+i*50,50+j*50)
+                cells.create_rectangle(*coord,fill = "green",outline="black",tag=tags)
+                
+                cells_tag.append(tags)
+                tag_to_coord[tags] = coord
+                self.coord_to_tag[coord] = tags
+
+                #i:横、j:縦
+
+                if i == 3 and j == 3:
+                    coord_to_piece[coord] = Stone.GREEN
+                    cells.create_oval(*coord,fill="green yellow",tag=tags)
+                elif i == 4 and j == 3:
+                    coord_to_piece[coord] = Stone.RED
+                    cells.create_oval(*coord,fill="red",tag=tags)
+                elif i == 3 and j == 4:
+                    coord_to_piece[coord] = Stone.ORANGE
+                    cells.create_oval(*coord,fill="orange",tag=tags)
+                elif i == 4 and j == 4:
+                    coord_to_piece[coord] = Stone.BLUE
+                    cells.create_oval(*coord,fill="blue",tag=tags)
+                else:
+                    coord_to_piece[coord] = Stone.NONE
+        cells.place(x=350,y=100)
+
+        for tags in cells_tag:
+            cells.tag_bind(tags,"<ButtonPress-1>",self.checkClick)
 
         
         othello_cpu_page.grid(row=0, column=0, sticky="nsew") 
@@ -217,14 +266,17 @@ class Tkview:
         window.mainloop()
     
     def movePage(self,page):
-        print("move")
+        print(page)
         page.tkraise()
-    
-    def getData(self,page,turn,level):
-        data = ["f","s","p","n","w"]
-        #page["text"] = "turn:" + data[turn] + " , level:" + data[level] 
+   
+    def checkClick(self,event):
+        for i in range(8):
+            for j in range(8):
+                coord = (i*50,j*50,50+i*50,50+j*50)
+                if i*50 <= event.x <= 50+i*50 and j*50 <= event.y <= 50+j*50:
+                    self.clicked_tag = self.coord_to_tag[coord]
+        print(self.clicked_tag)
         
-
 
 class Othelloapp:
     def __init__(self):
