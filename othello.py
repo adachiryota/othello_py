@@ -30,12 +30,15 @@ class Cell:
         if self.stone == Stone.CANDIDATE:
             self.stone = Stone.NONE """
 #[縦][横]
+#置けるかどうかの判断を行う
 class Board:
 
     def __init__(self):
         self._cells = [[Cell() for x in range(8)] for y in range(8)]
-        self._cells[3, 3], self._cells[3, 4] = Stone.GREEN, Stone.RED
-        self._cells[4, 3], self._cells[4, 4] = Stone.ORANGE, Stone.BLUE
+        self._cells[3][3] = Stone.GREEN
+        self._cells[4][3] = Stone.RED
+        self._cells[3][4] = Stone.ORANGE 
+        self._cells[4][4] = Stone.BLUE
 
     def returnCell(self):
         return repr(self._cells)
@@ -66,19 +69,35 @@ class Board:
         for row in self:
             for cell in row:
                 cell.reset_candidate()
+    
+    def canPlace(self):
+        print("in")
 
-
-#ルールの定義
 class Othello:
     def __init__(self):
-        self.board = ""
-        self.main = main = Tkview(self.board)
+        self.board = board = Board()
+        self.main = main = Tkview(board)
         main.initWindow()
         
+class Player:
+    def __init__(self,turn):
+        self.myturn = turn
+        self.stone = Stone()
+        if self.myturn == "f":
+            mycolor_1 = self.stone.RED
+            mycolor_2 = self.stone.ORANGE
+            encolor_1 = self.stone.BLUE
+            encolor_2 = self.stone.GREEN
 
+#CPUのレベルに合わせた深さを読む
+class Cpu:
+    def __init__(self,turn,level):
+        self.myturn = turn
+        self.level = level
 
 class Tkview:
     def __init__(self,board):
+        self.board = board
         print("view")
         #画面定義
         
@@ -91,7 +110,8 @@ class Tkview:
         window.grid_columnconfigure(0, weight=1)
         window.resizable(width=False, height=False)
 
-        self.data = ["先攻","後攻","強い","普通","弱い"]
+        self.data_lang = ["先攻","後攻","強い","普通","弱い"]
+        self.data = {0:["f","s"],1:["s","f"],2:"p",3:"n",4:"w"}
         #スタート画面
         start_page = tkinter.Frame(window)
         font_title = font.Font(family="Times",size=100,weight="bold")
@@ -155,14 +175,14 @@ class Tkview:
         attack_var = tkinter.IntVar()
         level_var = tkinter.IntVar()
         
-        #先攻後攻をfとsとする
+        
         
         attack_var.set(0)
         #強い普通弱いをpとnとwとする
         level_var.set(2)
 
-        self.attack = 0
-        self.level = 2
+        """ self.attack = 0
+        self.level = 2 """
         
 
         attack_first_buttton = tkinter.Radiobutton(battle_cpu_page,value=0,variable=attack_var,text="先攻")
@@ -189,15 +209,18 @@ class Tkview:
         #CPU対戦画面
         othello_cpu_page = tkinter.Frame(window)
 
+        self.player = Player(self.data[attack_var.get()][0])
+        self.cpu = Cpu(self.data[attack_var.get()][1],self.data[level_var.get()])
+
         
         font_text = font.Font(family="Times",size=20,weight="bold")
-        othello_cpu_title = tkinter.Label(othello_cpu_page,text = "あなた:" + self.data[attack_var.get()] + "  CPU:" + self.data[level_var.get()],font=font_text)        
+        othello_cpu_title = tkinter.Label(othello_cpu_page,text = "あなた:" + self.data_lang[attack_var.get()] + "  CPU:" + self.data_lang[level_var.get()],font=font_text)        
         othello_cpu_title.place(relx = 0.7,rely=0.12,anchor=tkinter.CENTER)
 
         cells_tag = []
 
         # tagがキー、座標がバリューの辞書定義
-        tag_to_coord = {}
+        self.tag_to_coord = {}
 
         # 座標がキー、tagがバリューの辞書定義
         self.coord_to_tag = {}
@@ -207,43 +230,50 @@ class Tkview:
 
         # 座標がキー、駒の状態を示す値をバリューとする辞書定義
         # (駒なし:0, 黒:1, 白:2)
-        coord_to_piece = {}
+        self.coord_to_piece = {}
         
 
 
-        cells = tkinter.Canvas(othello_cpu_page,width=400,height=400)
+        self.cells = tkinter.Canvas(othello_cpu_page,width=400,height=400)
         for i in range(8):
             for j in range(8):
                 tags = "{}_{}".format(i, j)
                 coord = (i*50,j*50,50+i*50,50+j*50)
-                cells.create_rectangle(*coord,fill = "green",outline="black",tag=tags)
+                self.cells.create_rectangle(*coord,fill = "green",outline="black",tag=tags)
                 
                 cells_tag.append(tags)
-                tag_to_coord[tags] = coord
+                self.tag_to_coord[tags] = coord
                 self.coord_to_tag[coord] = tags
 
                 #i:横、j:縦
 
                 if i == 3 and j == 3:
-                    coord_to_piece[coord] = Stone.GREEN
-                    cells.create_oval(*coord,fill="green yellow",tag=tags)
+                    self.coord_to_piece[coord] = Stone.GREEN
+                    self.cells.create_oval(*coord,fill="green yellow",tag=tags)
                 elif i == 4 and j == 3:
-                    coord_to_piece[coord] = Stone.RED
-                    cells.create_oval(*coord,fill="red",tag=tags)
+                    self.coord_to_piece[coord] = Stone.RED
+                    self.cells.create_oval(*coord,fill="red",tag=tags)
                 elif i == 3 and j == 4:
-                    coord_to_piece[coord] = Stone.ORANGE
-                    cells.create_oval(*coord,fill="orange",tag=tags)
+                    self.coord_to_piece[coord] = Stone.ORANGE
+                    self.cells.create_oval(*coord,fill="orange",tag=tags)
                 elif i == 4 and j == 4:
-                    coord_to_piece[coord] = Stone.BLUE
-                    cells.create_oval(*coord,fill="blue",tag=tags)
+                    self.coord_to_piece[coord] = Stone.BLUE
+                    self.cells.create_oval(*coord,fill="blue",tag=tags)
                 else:
-                    coord_to_piece[coord] = Stone.NONE
-        cells.place(x=350,y=100)
+                    self.coord_to_piece[coord] = Stone.NONE
+        self.cells.place(x=350,y=100)
 
         for tags in cells_tag:
-            cells.tag_bind(tags,"<ButtonPress-1>",self.checkClick)
+            self.cells.tag_bind(tags,"<ButtonPress-1>",self.checkClick)
 
-        
+        self.score = tkinter.Canvas(othello_cpu_page,width=300,height=250)
+        self.score.create_rectangle(2,2,299,249,fill = "white",tag="score_board")
+        self.score.create_text(50,50,text="score",tag="score",anchor=tkinter.CENTER)
+        self.score.place(x=20,y=50)
+        self.choice = tkinter.Canvas(othello_cpu_page,width=300,height=200)
+        self.choice.create_rectangle(2,2,299,199,fill = "white",tag="choice_board")
+        self.choice.create_text(50,50,text="color")
+        self.choice.place(x=20,y=350)
         othello_cpu_page.grid(row=0, column=0, sticky="nsew") 
 
         
@@ -275,8 +305,17 @@ class Tkview:
                 coord = (i*50,j*50,50+i*50,50+j*50)
                 if i*50 <= event.x <= 50+i*50 and j*50 <= event.y <= 50+j*50:
                     self.clicked_tag = self.coord_to_tag[coord]
-        print(self.clicked_tag)
+        print(self.tag_to_coord[self.clicked_tag])
+        self.cells.create_oval(*(self.tag_to_coord[self.clicked_tag]),fill="white",tag=self.clicked_tag)
+        self.coord_to_piece[coord] = Stone.RED
+        self.changeScore(self.coord_to_piece)
         
+    def changeScore(self,board_dic):
+        values = list(board_dic.values())
+        print(values)
+        count_red,count_orange,count_blue,count_green = values.count("R"),values.count("O"),values.count("B"),values.count("G")
+        self.score.itemconfig("score",text=count_red+count_orange+count_blue+count_green)
+
 
 class Othelloapp:
     def __init__(self):
