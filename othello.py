@@ -82,23 +82,45 @@ class Othello:
 class Player:
     def __init__(self,turn):
         self.myturn = turn
-        self.stone = Stone()
         if self.myturn == "f":
-            mycolor_1 = self.stone.RED
-            mycolor_2 = self.stone.ORANGE
-            encolor_1 = self.stone.BLUE
-            encolor_2 = self.stone.GREEN
+            self.mycolor_1 = "red"
+            self.mycolor_2 = "orange"
+            self.encolor_1 = "blue"
+            self.encolor_2 = "green"
+            self.myturnlang = "先攻"
+        else:
+            self.mycolor_1 = "blue"
+            self.mycolor_2 = "green"
+            self.encolor_1 = "red"
+            self.encolor_2 = "orange"
+            self.myturnlang = "後攻"
 
+    def returnMycolor(self):
+        return [self.mycolor_1,self.mycolor_2]
+    
+    def returnEnecolor(self):
+        return [self.encolor_1,self.encolor_2]
+    
+    def returnLang(self,color):
+        color_lang = {"red":"レッド","orange":"オレンジ","blue":"ブルー","green":"グリーン"}
+        return color_lang[color]
+    def returnTurnlang(self):
+        return self.myturnlang
+    
 #CPUのレベルに合わせた深さを読む
 class Cpu:
     def __init__(self,turn,level):
         self.myturn = turn
         self.level = level
+        level_data = {"p":"強い","n":"普通","w":"弱い"}
+        self.level_lang = level_data[self.level]
+    def returnLang(self):
+        return self.level_lang
+
 
 class Tkview:
     def __init__(self,board):
         self.board = board
-        print("view")
         #画面定義
         
 
@@ -110,7 +132,6 @@ class Tkview:
         window.grid_columnconfigure(0, weight=1)
         window.resizable(width=False, height=False)
 
-        self.data_lang = ["先攻","後攻","強い","普通","弱い"]
         self.data = {0:["f","s"],1:["s","f"],2:"p",3:"n",4:"w"}
         #スタート画面
         start_page = tkinter.Frame(window)
@@ -172,36 +193,36 @@ class Tkview:
         battle_cpu_title = tkinter.Label(battle_cpu_page,text = u"choice",font=font_text)        
         battle_cpu_title.place(relx = 0.5,rely=0.2,anchor=tkinter.CENTER)
 
-        attack_var = tkinter.IntVar()
-        level_var = tkinter.IntVar()
+        self.attack_var = tkinter.IntVar()
+        self.level_var = tkinter.IntVar()
         
         
         
-        attack_var.set(0)
+        self.attack_var.set(0)
         #強い普通弱いをpとnとwとする
-        level_var.set(2)
+        self.level_var.set(2)
 
         """ self.attack = 0
         self.level = 2 """
         
 
-        attack_first_buttton = tkinter.Radiobutton(battle_cpu_page,value=0,variable=attack_var,text="先攻")
+        attack_first_buttton = tkinter.Radiobutton(battle_cpu_page,value=0,variable=self.attack_var,text="先攻")
         attack_first_buttton.place(relx=0.3,rely=0.3,anchor=tkinter.CENTER)
-        attack_second_buttton = tkinter.Radiobutton(battle_cpu_page,value=1,variable=attack_var,text="後攻")
+        attack_second_buttton = tkinter.Radiobutton(battle_cpu_page,value=1,variable=self.attack_var,text="後攻")
         attack_second_buttton.place(relx=0.3,rely=0.5,anchor=tkinter.CENTER)
 
-        level_power_buttton = tkinter.Radiobutton(battle_cpu_page,value=2,variable=level_var,text="強い")
+        level_power_buttton = tkinter.Radiobutton(battle_cpu_page,value=2,variable=self.level_var,text="強い")
         level_power_buttton.place(relx=0.7,rely=0.3,anchor=tkinter.CENTER)
-        level_normal_buttton = tkinter.Radiobutton(battle_cpu_page,value=3,variable=level_var,text="普通")
+        level_normal_buttton = tkinter.Radiobutton(battle_cpu_page,value=3,variable=self.level_var,text="普通")
         level_normal_buttton.place(relx=0.7,rely=0.4,anchor=tkinter.CENTER)
-        level_weak_buttton = tkinter.Radiobutton(battle_cpu_page,value=4,variable=level_var,text="弱い")
+        level_weak_buttton = tkinter.Radiobutton(battle_cpu_page,value=4,variable=self.level_var,text="弱い")
         level_weak_buttton.place(relx=0.7,rely=0.5,anchor=tkinter.CENTER)
         
         font_button = font.Font(size=10)
         back_mode_button = tkinter.Button(battle_cpu_page,text=u"-戻る-",font=font_button,command=lambda: self.movePage(mode_page))
         back_mode_button.place(relx=0.4,rely=0.8,anchor=tkinter.CENTER)
 
-        battle_button = tkinter.Button(battle_cpu_page,text=u"-ゲームスタート-",font=font_button,command=lambda: self.movePage(othello_cpu_page))
+        battle_button = tkinter.Button(battle_cpu_page,text=u"-ゲームスタート-",font=font_button,command=lambda:[self.movePage(othello_cpu_page),self.getChoiced(othello_cpu_page)])
         battle_button.place(relx=0.6,rely=0.8,anchor=tkinter.CENTER)     
         battle_cpu_page.grid(row=0, column=0, sticky="nsew")
 
@@ -209,13 +230,13 @@ class Tkview:
         #CPU対戦画面
         othello_cpu_page = tkinter.Frame(window)
 
-        self.player = Player(self.data[attack_var.get()][0])
-        self.cpu = Cpu(self.data[attack_var.get()][1],self.data[level_var.get()])
+        self.player = Player(self.data[self.attack_var.get()][0])
+        self.cpu = Cpu(self.data[self.attack_var.get()][1],self.data[self.level_var.get()])
 
         
         font_text = font.Font(family="Times",size=20,weight="bold")
-        othello_cpu_title = tkinter.Label(othello_cpu_page,text = "あなた:" + self.data_lang[attack_var.get()] + "  CPU:" + self.data_lang[level_var.get()],font=font_text)        
-        othello_cpu_title.place(relx = 0.7,rely=0.12,anchor=tkinter.CENTER)
+        self.othello_cpu_title = tkinter.Label(othello_cpu_page,text = "",font=font_text)        
+        self.othello_cpu_title.place(relx = 0.7,rely=0.12,anchor=tkinter.CENTER)
 
         cells_tag = []
 
@@ -232,7 +253,9 @@ class Tkview:
         # (駒なし:0, 黒:1, 白:2)
         self.coord_to_piece = {}
         
-
+        #置く色（デフォルト）
+        self.place_color = self.player.mycolor_1
+        print(self.place_color)
 
         self.cells = tkinter.Canvas(othello_cpu_page,width=400,height=400)
         for i in range(8):
@@ -266,13 +289,32 @@ class Tkview:
         for tags in cells_tag:
             self.cells.tag_bind(tags,"<ButtonPress-1>",self.checkClick)
 
+        font_score,font_total = "courier 15 bold","Impact 30"
         self.score = tkinter.Canvas(othello_cpu_page,width=300,height=250)
         self.score.create_rectangle(2,2,299,249,fill = "white",tag="score_board")
-        self.score.create_text(50,50,text="score",tag="score",anchor=tkinter.CENTER)
+        self.score.create_text(150,30,text="score",tag="score_1",font=font_score,fill="#6091d3",anchor=tkinter.CENTER)
+        self.score.create_text(150,60,text="score",tag="score_2",font=font_score,fill="#6091d3",anchor=tkinter.CENTER)
+        self.score.create_text(150,90,text="score",tag="score_diff",font=font_score,fill="#6091d3",anchor=tkinter.CENTER)
+        self.score.create_text(150,145,text="score",tag="score_total",font=font_total,fill="#6091d3",anchor=tkinter.CENTER)
+        self.score.create_text(150,180,text="score",tag="score_total_en",font=font_total,fill="#6091d3",anchor=tkinter.CENTER)
+
         self.score.place(x=20,y=50)
         self.choice = tkinter.Canvas(othello_cpu_page,width=300,height=200)
-        self.choice.create_rectangle(2,2,299,199,fill = "white",tag="choice_board")
-        self.choice.create_text(50,50,text="color")
+        self.choice.create_rectangle(2,2,299,199,fill = "white")
+        self.choice.create_text(150,10,text="色選択(レッド)",font=("FixedSys",30),anchor="n",tag="choice_board")
+        self.choice.create_oval(35,100,115,180,fill = "white",outline="yellow",tag="color1",width=3)
+        self.choice.create_oval(185,100,265,180,fill = "white",outline="black",tag="color2")
+
+        self.changeScore(self.coord_to_piece)
+
+        self.choice.itemconfig("color1",fill=self.player.returnMycolor()[0])
+        self.choice.itemconfig("color2",fill=self.player.returnMycolor()[1])
+        self.choice.tag_bind("color1","<ButtonPress-1>",self.changeColor)
+        self.choice.tag_bind("color2","<ButtonPress-1>",self.changeColor)
+
+
+
+        #self.choice.create_rectangle(,fill = "green",outline="black",tag=color2)
         self.choice.place(x=20,y=350)
         othello_cpu_page.grid(row=0, column=0, sticky="nsew") 
 
@@ -294,28 +336,58 @@ class Tkview:
 
         start_page.tkraise()
         window.mainloop()
+
+    
     
     def movePage(self,page):
-        print(page)
         page.tkraise()
-   
+    
+    def getChoiced(self,page):
+        self.player = Player(self.data[self.attack_var.get()][0])
+        self.cpu = Cpu(self.data[self.attack_var.get()][1],self.data[self.level_var.get()])
+        
+        #ページ更新処理
+        self.choice.itemconfig("choice_board",text="色選択("+self.player.returnLang(self.player.mycolor_1)+")")
+        self.choice.itemconfig("color1",fill=self.player.mycolor_1)
+        self.choice.itemconfig("color2",fill=self.player.mycolor_2)
+
+        self.othello_cpu_title.configure(text="あなた:" + self.player.returnTurnlang() + "  CPU:" + self.cpu.returnLang())
+
     def checkClick(self,event):
         for i in range(8):
             for j in range(8):
                 coord = (i*50,j*50,50+i*50,50+j*50)
                 if i*50 <= event.x <= 50+i*50 and j*50 <= event.y <= 50+j*50:
                     self.clicked_tag = self.coord_to_tag[coord]
-        print(self.tag_to_coord[self.clicked_tag])
-        self.cells.create_oval(*(self.tag_to_coord[self.clicked_tag]),fill="white",tag=self.clicked_tag)
-        self.coord_to_piece[coord] = Stone.RED
+
+        self.cells.create_oval(*(self.tag_to_coord[self.clicked_tag]),fill=self.place_color,tag=self.clicked_tag)
+        self.coord_to_piece[self.tag_to_coord[self.clicked_tag]] = Stone.RED
         self.changeScore(self.coord_to_piece)
+
+    def changeColor(self,event):
+        if event.x <= 150:
+            choice_color = self.player.mycolor_1
+            choice_button = "color1"
+            not_choice_button = "color2"
+        else:
+            choice_color = self.player.mycolor_2
+            choice_button = "color2"
+            not_choice_button = "color1"
+
+        self.place_color = choice_color
+        self.choice.itemconfig("choice_board",text="色選択("+self.player.returnLang(choice_color)+")")
+        self.choice.itemconfig(choice_button,outline="yellow",width=3)
+        self.choice.itemconfig(not_choice_button,outline="black",width=1)
         
     def changeScore(self,board_dic):
         values = list(board_dic.values())
-        print(values)
+        #print(values)
         count_red,count_orange,count_blue,count_green = values.count("R"),values.count("O"),values.count("B"),values.count("G")
-        self.score.itemconfig("score",text=count_red+count_orange+count_blue+count_green)
-
+        self.score.itemconfig("score_1",text="オレンジ("+str(count_orange)+"枚×5点):"+str(count_orange*5))
+        self.score.itemconfig("score_2",text="レッド("+str(count_red)+"枚×2点):"+str(count_red*2))
+        self.score.itemconfig("score_diff",text="枚数の差分("+str(abs(count_orange-count_red))+"枚×-5点):"+str(abs(count_orange-count_red)*(-5)))
+        self.score.itemconfig("score_total",text="Total:"+str(count_orange*5+count_red*2+abs(count_orange-count_red)*(-5)))
+        self.score.itemconfig("score_total_en",text="(あいて:"+str(count_blue*5+count_green*2+abs(count_blue-count_green)*(-5))+")")
 
 class Othelloapp:
     def __init__(self):
