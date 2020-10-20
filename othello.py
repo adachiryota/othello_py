@@ -2,76 +2,106 @@ import tkinter
 from tkinter import font
 
 class Stone:
-    NONE = 0
-    WHITE = "w"
-    RED = "R"
-    ORANGE = "O"
-    BLUE = "B"
-    GREEN = "G"
-
-class Cell:
     def __init__(self):
-        self.stone = Stone.NONE
+        self.dic = {"none":0,"white":"W","red":"R","orange":"O","blue":"B","green":"G"}
+        self.friend_dic = {"R":"O","O":"R","B":"G","G":"B"}
 
-    def returnType(self):
-        return self.stone
+    def getColor(self,var):
+        return self.dic[var]
+    
+    def getFriend(self,var):
+        return self.friend_dic[self.dic[var]]
 
-    def checkEquall(self, stone):
-        return self.stone == stone
 
-    """ def is_none(self):
-        return self.stone in (Stone.NONE, Stone.CANDIDATE)
-
-    def set_candidate(self):
-        if self.stone == Stone.NONE:
-            self.stone = Stone.CANDIDATE
-
-    def reset_candidate(self):
-        if self.stone == Stone.CANDIDATE:
-            self.stone = Stone.NONE """
 #[縦][横]
 #置けるかどうかの判断を行う
 class Board:
-
     def __init__(self):
-        self._cells = [[Cell() for x in range(8)] for y in range(8)]
-        self._cells[3][3] = Stone.GREEN
-        self._cells[4][3] = Stone.RED
-        self._cells[3][4] = Stone.ORANGE 
-        self._cells[4][4] = Stone.BLUE
+        self.stone = Stone()
+        self.cells = [[0 for j in range(8)] for i in range(8)]
+        self.cells[3][3] = self.stone.getColor("green")
+        self.cells[4][3] = self.stone.getColor("red")
+        self.cells[3][4] = self.stone.getColor("orange")
+        self.cells[4][4] = self.stone.getColor("blue")
+        
+        
 
     def returnCell(self):
-        return repr(self._cells)
+        return repr(self.cells)
 
     def __iter__(self):
-        return (tuple(row) for row in self._cells)
+        return (tuple(row) for row in self.cells)
 
     def getItem(self, pos):
         x, y = pos
-        return self._cells[y][x].stone
+        return self.cells[y][x]
 
     def setItem(self, pos, stone):
         x, y = pos
-        self._cells[y][x].stone = stone
+        self.cells[y][x] = stone
 
     def checkContain(self, pos):
         x, y = pos
-        return 0 <= y < len(self._cells) and 0 <= x < len(self._cells[y])
+        return 0 <= y < len(self.cells) and 0 <= x < len(self.cells[y])
+
 
     def is_used(self, x, y):
-        return not self._cells[y][x].is_none()
+        return not self.cells[y][x].is_none()
 
     def set_candidates(self, candidates):
         for x, y in candidates:
-            self._cells[y][x].set_candidate()
+            self.cells[y][x].set_candidate()
 
     def reset_candidates(self):
         for row in self:
             for cell in row:
                 cell.reset_candidate()
     
-    def canPlace(self):
-        print("in")
+    def canPlace(self,tag,color):
+        print(self.cells)
+        self.x,self.y = int(tag.split("_")[0]),int(tag.split("_")[1])
+        whites = []
+        self.color1,self.color2 = self.stone.getColor(color),self.stone.getFriend(color)
+        flag = 0
+        for i in range(-1,2):
+            for j in range(-1,2):
+                flag = 0
+                if i == 0 & j == 0:
+                    continue
+
+                
+                if self.checkContain((self.x+i,self.y+j)):
+                    self.next_x,self.next_y= i + self.x,j + self.y
+                else:
+                    self.next_x,self.next_y= self.x,self.y
+                
+                
+                #メモ
+                """
+                現状：駒のおける位置の認識はほぼできているが、自分の色同士で挟めない問題がある
+                """
+                while self.cells[self.next_x][self.next_y] != self.color1 and self.cells[self.next_x][self.next_y] != self.color2 and self.cells[self.next_x][self.next_y] != self.stone.getColor("none") and self.cells[self.next_x][self.next_y] != self.stone.getColor("white"):
+                   
+                    flag = 1
+                    if self.checkContain((self.next_x+i,self.next_y+j)):
+                        self.next_x += i
+                        self.next_y += j
+                    else:
+                        break
+
+                
+                
+                if flag == 1 and (self.cells[self.next_x][self.next_y] == self.color1 or self.cells[self.next_x][self.next_y] == self.color2):
+                    
+                    print(self.cells[self.next_x][self.next_y]) 
+                    whites.append((self.next_x,self.next_y))
+
+
+        if len(whites):
+            self.setItem((self.x,self.y),self.stone.getColor(color))
+            return True
+        else:
+            return False
 
 class Othello:
     def __init__(self):
@@ -104,6 +134,7 @@ class Player:
     def returnLang(self,color):
         color_lang = {"red":"レッド","orange":"オレンジ","blue":"ブルー","green":"グリーン"}
         return color_lang[color]
+
     def returnTurnlang(self):
         return self.myturnlang
     
@@ -232,6 +263,7 @@ class Tkview:
 
         self.player = Player(self.data[self.attack_var.get()][0])
         self.cpu = Cpu(self.data[self.attack_var.get()][1],self.data[self.level_var.get()])
+        self.stone = Stone()
 
         
         font_text = font.Font(family="Times",size=20,weight="bold")
@@ -260,7 +292,7 @@ class Tkview:
         self.cells = tkinter.Canvas(othello_cpu_page,width=400,height=400)
         for i in range(8):
             for j in range(8):
-                tags = "{}_{}".format(i, j)
+                tags = "{}_{}".format(j, i)
                 coord = (i*50,j*50,50+i*50,50+j*50)
                 self.cells.create_rectangle(*coord,fill = "green",outline="black",tag=tags)
                 
@@ -271,19 +303,19 @@ class Tkview:
                 #i:横、j:縦
 
                 if i == 3 and j == 3:
-                    self.coord_to_piece[coord] = Stone.GREEN
+                    self.coord_to_piece[coord] = self.stone.getColor("green")
                     self.cells.create_oval(*coord,fill="green yellow",tag=tags)
                 elif i == 4 and j == 3:
-                    self.coord_to_piece[coord] = Stone.RED
+                    self.coord_to_piece[coord] = self.stone.getColor("red")
                     self.cells.create_oval(*coord,fill="red",tag=tags)
                 elif i == 3 and j == 4:
-                    self.coord_to_piece[coord] = Stone.ORANGE
+                    self.coord_to_piece[coord] = self.stone.getColor("orange")
                     self.cells.create_oval(*coord,fill="orange",tag=tags)
                 elif i == 4 and j == 4:
-                    self.coord_to_piece[coord] = Stone.BLUE
+                    self.coord_to_piece[coord] = self.stone.getColor("blue")
                     self.cells.create_oval(*coord,fill="blue",tag=tags)
                 else:
-                    self.coord_to_piece[coord] = Stone.NONE
+                    self.coord_to_piece[coord] = self.stone.getColor("none")
         self.cells.place(x=350,y=100)
 
         for tags in cells_tag:
@@ -299,11 +331,11 @@ class Tkview:
         self.score.create_text(150,180,text="score",tag="score_total_en",font=font_total,fill="#6091d3",anchor=tkinter.CENTER)
 
         self.score.place(x=20,y=50)
-        self.choice = tkinter.Canvas(othello_cpu_page,width=300,height=200)
-        self.choice.create_rectangle(2,2,299,199,fill = "white")
+        self.choice = tkinter.Canvas(othello_cpu_page,width=300,height=170)
+        self.choice.create_rectangle(2,2,299,169,fill = "white")
         self.choice.create_text(150,10,text="色選択(レッド)",font=("FixedSys",30),anchor="n",tag="choice_board")
-        self.choice.create_oval(35,100,115,180,fill = "white",outline="yellow",tag="color1",width=3)
-        self.choice.create_oval(185,100,265,180,fill = "white",outline="black",tag="color2")
+        self.choice.create_oval(35,70,115,150,fill = "white",outline="yellow",tag="color1",width=3)
+        self.choice.create_oval(185,70,265,150,fill = "white",outline="black",tag="color2")
 
         self.changeScore(self.coord_to_piece)
 
@@ -359,10 +391,11 @@ class Tkview:
                 coord = (i*50,j*50,50+i*50,50+j*50)
                 if i*50 <= event.x <= 50+i*50 and j*50 <= event.y <= 50+j*50:
                     self.clicked_tag = self.coord_to_tag[coord]
-
-        self.cells.create_oval(*(self.tag_to_coord[self.clicked_tag]),fill=self.place_color,tag=self.clicked_tag)
-        self.coord_to_piece[self.tag_to_coord[self.clicked_tag]] = Stone.RED
-        self.changeScore(self.coord_to_piece)
+        if self.board.canPlace(self.clicked_tag,self.place_color):
+            self.cells.create_oval(*(self.tag_to_coord[self.clicked_tag]),fill=self.place_color,tag=self.clicked_tag)
+            self.coord_to_piece[self.tag_to_coord[self.clicked_tag]] = self.stone.getColor(self.place_color)
+            self.changeScore(self.coord_to_piece)
+        
 
     def changeColor(self,event):
         if event.x <= 150:
