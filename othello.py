@@ -58,15 +58,13 @@ class Board:
                 cell.reset_candidate()
     
     def canPlace(self,tag,color):
-        print(self.cells)
         self.x,self.y = int(tag.split("_")[0]),int(tag.split("_")[1])
         whites = []
         self.color1,self.color2 = self.stone.getColor(color),self.stone.getFriend(color)
-        flag = 0
         for i in range(-1,2):
             for j in range(-1,2):
-                flag = 0
-                if i == 0 & j == 0:
+                
+                if i == 0 and j == 0:
                     continue
 
                 
@@ -75,33 +73,36 @@ class Board:
                 else:
                     self.next_x,self.next_y= self.x,self.y
                 
-                
-                #メモ
-                """
-                現状：駒のおける位置の認識はほぼできているが、自分の色同士で挟めない問題がある
-                """
+               
+                flag = 0
                 while self.cells[self.next_x][self.next_y] != self.color1 and self.cells[self.next_x][self.next_y] != self.color2 and self.cells[self.next_x][self.next_y] != self.stone.getColor("none") and self.cells[self.next_x][self.next_y] != self.stone.getColor("white"):
-                   
-                    flag = 1
+                    flag = 1 
                     if self.checkContain((self.next_x+i,self.next_y+j)):
+                        #if self.cells[self.next_x][self.next_y] != self.color2:
+                            
                         self.next_x += i
                         self.next_y += j
                     else:
                         break
 
                 
-                
                 if flag == 1 and (self.cells[self.next_x][self.next_y] == self.color1 or self.cells[self.next_x][self.next_y] == self.color2):
-                    
-                    print(self.cells[self.next_x][self.next_y]) 
-                    whites.append((self.next_x,self.next_y))
+                    whites.append((self.next_x,self.next_y,i,j))
 
 
         if len(whites):
-            self.setItem((self.x,self.y),self.stone.getColor(color))
-            return True
+            for i in whites:
+                point_x,point_y,move_x,move_y = i[0],i[1],i[2],i[3]
+                while not (self.x == point_x and self.y == point_y):
+                    point_x += (-1)*move_x
+                    point_y += (-1)*move_y
+                    self.setItem((point_x,point_y),self.color1)
+            
+            self.setItem((self.x,self.y),self.color1)
+            
+            return True,self.cells
         else:
-            return False
+            return False,0
 
 class Othello:
     def __init__(self):
@@ -287,7 +288,6 @@ class Tkview:
         
         #置く色（デフォルト）
         self.place_color = self.player.mycolor_1
-        print(self.place_color)
 
         self.cells = tkinter.Canvas(othello_cpu_page,width=400,height=400)
         for i in range(8):
@@ -391,11 +391,22 @@ class Tkview:
                 coord = (i*50,j*50,50+i*50,50+j*50)
                 if i*50 <= event.x <= 50+i*50 and j*50 <= event.y <= 50+j*50:
                     self.clicked_tag = self.coord_to_tag[coord]
-        if self.board.canPlace(self.clicked_tag,self.place_color):
+        judge = self.board.canPlace(self.clicked_tag,self.place_color)
+        if judge[0]:
+            self.changePiece(judge[1])
             self.cells.create_oval(*(self.tag_to_coord[self.clicked_tag]),fill=self.place_color,tag=self.clicked_tag)
             self.coord_to_piece[self.tag_to_coord[self.clicked_tag]] = self.stone.getColor(self.place_color)
             self.changeScore(self.coord_to_piece)
-        
+
+    def changePiece(self,board):
+        print(board)
+        for i in range(8):
+            for j in range(8):
+                if board[i][j] == self.stone.getColor(self.place_color):
+                    tag = str(j)+"_"+str(i)
+                    self.cells.create_oval(*(self.tag_to_coord[tag]),fill=self.place_color,tag=tag)
+                    self.coord_to_piece[self.tag_to_coord[tag]] = self.stone.getColor(self.place_color)
+                    self.changeScore(self.coord_to_piece)
 
     def changeColor(self,event):
         if event.x <= 150:
